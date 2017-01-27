@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 using System.IO.Ports;
 
@@ -13,6 +8,13 @@ namespace DVMegaToolsClone
 {
     public partial class DVMegaToolsClone : Form
     {
+        enum op_mode {
+            AMBE,
+            GMSK
+        };
+
+        op_mode m_op_mode = op_mode.AMBE;
+
         public DVMegaToolsClone()
         {
             InitializeComponent();
@@ -30,14 +32,21 @@ namespace DVMegaToolsClone
 
         private void write_Click(object sender, EventArgs e)
         {
+            yourCall.Enabled = false;
+            myCall.Enabled = false;
+            myCall2.Enabled = false;
+            rpt1.Enabled = false;
+            rpt2.Enabled = false;
+            write.Enabled = false;
+
             //Write to ROM
-            byte[] buffer = new byte[RADIO_HEADER_LENGTH_BYTES + 8 + 4 + 2 + 2 + 2];
+            byte[] buffer = new byte[RADIO_HEADER_LENGTH_BYTES + 8 + 4 + 2 + 2 + (m_op_mode == op_mode.GMSK ? 2 : 0) + 1];
 
             int offset = 4;
             buffer[0] = DVRPTR_FRAME_START;
-            buffer[1] = 0x35;
+            buffer[1] = (byte)(m_op_mode == op_mode.AMBE ? 0x35 : 0x37); //0x37 for GMSK
             buffer[2] = 0x00;
-            buffer[3] = 0x21; //DVMega command
+            buffer[3] = (byte)(m_op_mode == op_mode.AMBE ? 0x21 : 0x24); //DVMega command 0x24 for GMSK
 
             buffer[0 + offset] = DVRPTR_FRAME_START;
             buffer[1 + offset] = 0x2F;
@@ -66,22 +75,44 @@ namespace DVMegaToolsClone
             cksum1.result(buffer, (ushort)(offset + 8 + RADIO_HEADER_LENGTH_BYTES - 2));
             //--- until here 43 (2BH) bytes
 
-            cksum1.reset();
-            cksum1.update(buffer, (ushort)(offset + 4), (ushort)(RADIO_HEADER_LENGTH_BYTES + 4));
-            cksum1.result(buffer, (ushort)(offset + 4 + RADIO_HEADER_LENGTH_BYTES + 4));
+            buffer[offset + 4 + RADIO_HEADER_LENGTH_BYTES + 4] = 0x00;
+            buffer[offset + 4 + RADIO_HEADER_LENGTH_BYTES + 5] = 0x00;
+            buffer[offset + 4 + RADIO_HEADER_LENGTH_BYTES + 6] = 0x0b;
 
-            cksum1.reset();
-            cksum1.update(buffer, (ushort)offset, (ushort)(RADIO_HEADER_LENGTH_BYTES + 8 + 2));
-            cksum1.result(buffer, (ushort)(RADIO_HEADER_LENGTH_BYTES + 8 + 2 + offset));
+            //I don't know why 0x0b, but original DVMega tools does so.
+            if (m_op_mode == op_mode.GMSK)
+            {
+                buffer[offset + 4 + RADIO_HEADER_LENGTH_BYTES + 7] = (byte)(rxInvert.Checked ? 0x01 : 0x00);
+                buffer[offset + 4 + RADIO_HEADER_LENGTH_BYTES + 8] = (byte)(txInvert.Checked ? 0x01 : 0x00);
+
+                buffer[offset + 4 + RADIO_HEADER_LENGTH_BYTES + 9] = 0x00;
+                buffer[offset + 4 + RADIO_HEADER_LENGTH_BYTES + 10] = 0x0b;
+            }
+            else
+            {
+                buffer[offset + 4 + RADIO_HEADER_LENGTH_BYTES + 7] = 0x00;
+                buffer[offset + 4 + RADIO_HEADER_LENGTH_BYTES + 8] = 0x0b;
+            }
+
+            //cksum1.reset();
+            //cksum1.update(buffer, (ushort)(offset + 4), (ushort)(RADIO_HEADER_LENGTH_BYTES + 4));
+            //cksum1.result(buffer, (ushort)(offset + 4 + RADIO_HEADER_LENGTH_BYTES + 4));
+            //cksum1.reset();
+            //cksum1.update(buffer, (ushort)offset, (ushort)(RADIO_HEADER_LENGTH_BYTES + 8 + 2));
+            //cksum1.result(buffer, (ushort)(RADIO_HEADER_LENGTH_BYTES + 8 + 2 + offset));
 
             try
             {
-
                 myComPort.Write(buffer, 0, buffer.Length);
-                int cnt = myComPort.Read(buffer, 0, 4);
+                int cnt = 0;
+                while (cnt == 0)
+                {
+                    Thread.Sleep(200);
+                    cnt = myComPort.Read(buffer, 0, 4);
+                }
                 myComPort.Close();
                 string resp = Encoding.ASCII.GetString(buffer, 0, cnt);
-                if (resp == "OK2")
+                if (resp == "OK2" || resp == "OK3")
                 {
                     logOutput("Callsign successfully written");
                 }
@@ -112,42 +143,80 @@ namespace DVMegaToolsClone
                 myComPort.ReadTimeout = 1000;
                 myComPort.Open();
 
-                byte[] buffer = new byte[] { DVRPTR_FRAME_START, 0x01, 0x00, 0x22, 0, 0x0b };
-                myComPort.Write(buffer, 0, 6);
-                int cnt = myComPort.Read(buffer, 0, 4);
-                //Expects C10A as version string
-                if (cnt == 4)
+                for (int i = 0; i < 5; i++)
                 {
-                    string version = Encoding.ASCII.GetString(buffer, 0, cnt);
-                    if (version != "C10A")
+                    try
                     {
-                        logOutput("Got wrong version string: " + version);
-                        myComPort.Close();
-                        throw new Exception("Wrong version");
+                        checkVersion();
+                        break;
                     }
-
-                    //Good
-                    logOutput("Version string: " + version);
-                    comPort.Enabled = false;
-                    bOpen = true;
-
-                    yourCall.Enabled = true;
-                    myCall.Enabled = true;
-                    myCall2.Enabled = true;
-                    rpt1.Enabled = true;
-                    rpt2.Enabled = true;
-                }
-                else
-                {
-                    //Wrong version
-                    logOutput("Got wrong version string");
-                    myComPort.Close();
-                    throw new Exception("Wrong version");
+                    catch (Exception ex2)
+                    {
+                        if (i == 4)
+                        {
+                            throw new Exception(string.Format("Failed to open {0}", curComPort));
+                        }
+                        Thread.Sleep(1000);
+                    }
                 }
             }
             catch (Exception ex)
             {
                 logOutput(String.Format("Failed to open {0}, ex: {1}", curComPort, ex.Message));
+            }
+        }
+
+        private void checkVersion()
+        {
+            byte[] buffer = new byte[] { DVRPTR_FRAME_START, 0x01, 0x00, 0x22, 0, 0x0b };
+            myComPort.Write(buffer, 0, 6);
+            int cnt = 0;
+            while (cnt == 0)
+            {
+                Thread.Sleep(500);
+                cnt = myComPort.Read(buffer, 0, 4);
+            }
+            //Expects C10A as version string
+            if (cnt == 4)
+            {
+                string version = Encoding.ASCII.GetString(buffer, 0, cnt);
+                //C10A for AMBE board
+                //C12A for AMBE+GMSK
+                if (version == "C10A")
+                {
+                    m_op_mode = DVMegaToolsClone.op_mode.AMBE;
+                    txInvert.Enabled = false;
+                    rxInvert.Enabled = false;
+                }
+                else if (version == "C12A")
+                {
+                    m_op_mode = DVMegaToolsClone.op_mode.GMSK;
+                    txInvert.Enabled = true;
+                    rxInvert.Enabled = true;
+                }
+                else
+                {
+                    logOutput("Got wrong version string: " + version);
+                    myComPort.Close();
+                    throw new Exception("Wrong version");
+                }
+
+                //Good
+                logOutput("Version string: " + version + " mode: " + m_op_mode);
+                comPort.Enabled = false;
+                bOpen = true;
+
+                yourCall.Enabled = true;
+                myCall.Enabled = true;
+                myCall2.Enabled = true;
+                rpt1.Enabled = true;
+                rpt2.Enabled = true;
+            }
+            else
+            {
+                //Wrong version
+                logOutput("Got wrong version string");
+                throw new Exception("Wrong version");
             }
         }
 

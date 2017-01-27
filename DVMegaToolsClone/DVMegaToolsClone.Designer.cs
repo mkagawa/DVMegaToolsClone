@@ -42,6 +42,8 @@
             this.label5 = new System.Windows.Forms.Label();
             this.yourCall = new System.Windows.Forms.TextBox();
             this.logOutputBox = new System.Windows.Forms.ListBox();
+            this.rxInvert = new System.Windows.Forms.CheckBox();
+            this.txInvert = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -189,11 +191,33 @@
             this.logOutputBox.TabIndex = 14;
             this.logOutputBox.UseTabStops = false;
             // 
+            // rxInvert
+            // 
+            this.rxInvert.AutoSize = true;
+            this.rxInvert.Location = new System.Drawing.Point(26, 293);
+            this.rxInvert.Name = "rxInvert";
+            this.rxInvert.Size = new System.Drawing.Size(70, 17);
+            this.rxInvert.TabIndex = 15;
+            this.rxInvert.Text = "RX invert";
+            this.rxInvert.UseVisualStyleBackColor = true;
+            // 
+            // txInvert
+            // 
+            this.txInvert.AutoSize = true;
+            this.txInvert.Location = new System.Drawing.Point(108, 293);
+            this.txInvert.Name = "txInvert";
+            this.txInvert.Size = new System.Drawing.Size(70, 17);
+            this.txInvert.TabIndex = 16;
+            this.txInvert.Text = "TX Invert";
+            this.txInvert.UseVisualStyleBackColor = true;
+            // 
             // DVMegaToolsClone
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(433, 404);
+            this.Controls.Add(this.txInvert);
+            this.Controls.Add(this.rxInvert);
             this.Controls.Add(this.logOutputBox);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.yourCall);
@@ -236,6 +260,8 @@
         private System.Windows.Forms.TextBox yourCall;
         private System.Windows.Forms.ComboBox comPort;
         private System.Windows.Forms.ListBox logOutputBox;
+        private System.Windows.Forms.CheckBox rxInvert;
+        private System.Windows.Forms.CheckBox txInvert;
     }
 }
 
