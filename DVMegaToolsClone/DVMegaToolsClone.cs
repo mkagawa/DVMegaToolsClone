@@ -38,6 +38,8 @@ namespace DVMegaToolsClone
             rpt1.Enabled = false;
             rpt2.Enabled = false;
             write.Enabled = false;
+            txInvert.Enabled = false;
+            rxInvert.Enabled = false;
 
             //Write to ROM
             byte[] buffer = new byte[RADIO_HEADER_LENGTH_BYTES + 8 + 4 + 2 + 2 + (m_op_mode == op_mode.GMSK ? 2 : 0) + 1];
@@ -135,6 +137,8 @@ namespace DVMegaToolsClone
             rpt1.Enabled = false;
             rpt2.Enabled = false;
             write.Enabled = false;
+            txInvert.Enabled = false;
+            rxInvert.Enabled = false;
 
             try
             {
