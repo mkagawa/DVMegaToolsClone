@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using System.IO.Ports;
+using Microsoft.Win32;
 
 namespace DVMegaToolsClone
 {
@@ -21,6 +22,14 @@ namespace DVMegaToolsClone
 
             this.comPort.Items.AddRange(SerialPort.GetPortNames());
             write.Enabled = false;
+            yourCall.Enabled = false;
+            myCall.Enabled = false;
+            myCall2.Enabled = false;
+            rpt1.Enabled = false;
+            rpt2.Enabled = false;
+            write.Enabled = false;
+            txInvert.Enabled = false;
+            rxInvert.Enabled = false;
         }
 
         CHeaderData header = new CHeaderData();
@@ -116,7 +125,23 @@ namespace DVMegaToolsClone
                 string resp = Encoding.ASCII.GetString(buffer, 0, cnt);
                 if (resp == "OK2" || resp == "OK3")
                 {
-                    logOutput("Callsign successfully written");
+                    logOutput("Callsign successfully written.");
+                    logOutput("Click [x] to close");
+
+                    using (var key = Registry.CurrentUser.OpenSubKey("Software", true))
+                    {
+                        var key2 = key.OpenSubKey("NW6UP", true);
+                        var key3 = key2.OpenSubKey("DVMegaToolsClone", true);
+                        key3.SetValue("Rpt2", header.RptCall2, RegistryValueKind.String);
+                        key3.SetValue("Rpt1", header.RptCall1, RegistryValueKind.String);
+                        key3.SetValue("Ur", header.YourCall, RegistryValueKind.String);
+                        key3.SetValue("My", header.MyCall, RegistryValueKind.String);
+                        key3.SetValue("My2", header.MyCall2, RegistryValueKind.String);
+                        key3.SetValue("TxInv", txInvert.Checked ? 1 : 0, RegistryValueKind.DWord);
+                        key3.SetValue("RxInv", rxInvert.Checked ? 1 : 0, RegistryValueKind.DWord);
+                        key3.Close();
+                        key2.Close();
+                    }
                 }
             }
             catch (Exception ex)
@@ -206,6 +231,33 @@ namespace DVMegaToolsClone
                 }
 
                 //Good
+                using (var key = Registry.CurrentUser.OpenSubKey("Software", true))
+                {
+                    key.CreateSubKey("NW6UP");
+                    using (var key2 = key.OpenSubKey("NW6UP", true))
+                    {
+                        key2.CreateSubKey("DVMegaToolsClone");
+                        using (var key3 = key2.OpenSubKey("DVMegaToolsClone", true))
+                        {
+                            rpt2.Text = (string)key3.GetValue("Rpt2");
+                            rpt1.Text = (string)key3.GetValue("Rpt1");
+                            myCall.Text = (string)key3.GetValue("My");
+                            myCall2.Text = (string)key3.GetValue("My2");
+                            yourCall.Text = (string)key3.GetValue("Ur");
+                            if (String.IsNullOrWhiteSpace(yourCall.Text))
+                            {
+                                yourCall.Text = "CQCQCQ";
+                            }
+
+                            int? tx = (int?)key3.GetValue("TxInv");
+                            txInvert.Checked = (tx != null && tx != 0);
+                            int? rx = (int?)key3.GetValue("RxInv");
+                            rxInvert.Checked = (rx != null && rx != 0);
+                        }
+                    }
+                }
+
+
                 logOutput("Version string: " + version + " mode: " + m_op_mode);
                 comPort.Enabled = false;
                 bOpen = true;
@@ -290,6 +342,16 @@ namespace DVMegaToolsClone
         private void rpt2_TextChanged(object sender, EventArgs e)
         {
             header.setRptCall2(this.rpt2.Text);
+            checkAllFilled();
+        }
+
+        private void txInvert_CheckedChanged(object sender, EventArgs e)
+        {
+            checkAllFilled();
+        }
+
+        private void rxInvert_CheckedChanged(object sender, EventArgs e)
+        {
             checkAllFilled();
         }
     }

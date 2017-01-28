@@ -200,6 +200,7 @@
             this.rxInvert.TabIndex = 15;
             this.rxInvert.Text = "RX invert";
             this.rxInvert.UseVisualStyleBackColor = true;
+            this.rxInvert.CheckedChanged += new System.EventHandler(this.rxInvert_CheckedChanged);
             // 
             // txInvert
             // 
@@ -210,6 +211,7 @@
             this.txInvert.TabIndex = 16;
             this.txInvert.Text = "TX Invert";
             this.txInvert.UseVisualStyleBackColor = true;
+            this.txInvert.CheckedChanged += new System.EventHandler(this.txInvert_CheckedChanged);
             // 
             // DVMegaToolsClone
             // 

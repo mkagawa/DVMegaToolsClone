@@ -1,3 +1,4 @@
 DVMegaToolsClone/bin/
 DVMegaToolsClone/obj
-*.suo
+DVMegaToolsClone.v12.suo
+.gitignore

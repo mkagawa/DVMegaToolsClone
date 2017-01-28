@@ -14,6 +14,12 @@ namespace DVMegaToolsClone
         byte[] _RptCall1 = new byte[8];
         byte[] _RptCall2 = new byte[8];
 
+        public String MyCall { get { return Encoding.ASCII.GetString(_MyCall1); } }
+        public String MyCall2 { get { return Encoding.ASCII.GetString(_MyCall2); } }
+        public String YourCall { get { return Encoding.ASCII.GetString(_YourCall); } }
+        public String RptCall1 { get { return Encoding.ASCII.GetString(_RptCall1); } }
+        public String RptCall2 { get { return Encoding.ASCII.GetString(_RptCall2); } }
+
         public CHeaderData()
         {
             setYourCall("CQCQCQ");
