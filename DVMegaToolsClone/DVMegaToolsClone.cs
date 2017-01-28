@@ -9,7 +9,8 @@ namespace DVMegaToolsClone
 {
     public partial class DVMegaToolsClone : Form
     {
-        enum op_mode {
+        enum op_mode
+        {
             AMBE,
             GMSK
         };
@@ -304,7 +305,7 @@ namespace DVMegaToolsClone
                 header.getRptCall1().Length > 0 &&
                 header.getYourCall().Length > 0 &&
                 header.getMyCall().Length > 0 &&
-                header.getMyCall2().Length > 0 && 
+                header.getMyCall2().Length > 0 &&
                 bOpen)
             {
                 write.Enabled = true;
@@ -317,7 +318,7 @@ namespace DVMegaToolsClone
 
         private void yourCall_TextChanged(object sender, EventArgs e)
         {
-            header.setRptCall2(this.yourCall.Text);
+            header.setYourCall(this.yourCall.Text);
             checkAllFilled();
         }
 
@@ -335,6 +336,14 @@ namespace DVMegaToolsClone
 
         private void rpt1_TextChanged(object sender, EventArgs e)
         {
+            if (!String.IsNullOrWhiteSpace(this.rpt1.Text))
+            {
+                if (this.rpt1.Text.Length == 8)
+                {
+                    this.rpt2.Text = this.rpt1.Text.Substring(0, 7) + "G";
+                    header.setRptCall2(this.rpt2.Text);
+                }
+            }
             header.setRptCall1(this.rpt1.Text);
             checkAllFilled();
         }
